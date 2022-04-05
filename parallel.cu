@@ -12,7 +12,7 @@
 #include "utils.h"
 
 #define BLOCK_WIDTH 32
-#define GRID_SIZE 64
+#define GRID_SIZE 72
 
 bool continueNextGeneration = true;
 
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
     free(output);
     struct timespec tim, tim2;
     tim.tv_sec = 0;
-    tim.tv_nsec = 100000000L;
+    tim.tv_nsec = 75000000L;
     nanosleep(&tim, &tim2);
   }
 
