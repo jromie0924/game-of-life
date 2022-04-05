@@ -1,12 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <time.h>
 #include <signal.h>
 #include <unistd.h>
+#include <chrono>
 
-#define GRID_SIZE 50
+#define GRID_SIZE 72
 
 bool continueNextGeneration = true;
 
@@ -17,7 +19,13 @@ void printBoard() {
   for (int i = 0; i < GRID_SIZE; ++i) {
     for (int j = 0; j < GRID_SIZE; ++j) {
       int idx = i * GRID_SIZE + j;
-      std::cout << grid[idx] << " ";
+      std::string val;
+      if (grid[idx]) {
+        val = "#";
+      } else {
+        val = "-";
+      }
+      std::cout << val << " ";
     }
     std::cout << "\n";
   }
@@ -126,14 +134,24 @@ void handleSignal(int sigNum) {
 }
 
 int main() {
-  std::cout << "hi" << std::endl;
+
+  using std::chrono::high_resolution_clock;
+  using std::chrono::duration;
+  using std::chrono::milliseconds;
+
   initBoard();
   printBoard();
 
   signal(SIGINT, handleSignal);
   while (continueNextGeneration) {
+    auto start = high_resolution_clock::now();
     nextGeneration();
+    auto stop = high_resolution_clock::now();
+
+    duration<double, std::milli> t = stop - start;
+
     printBoard();
+    std::cout << "Process time: " << t.count() << " milliseconds\n";
     
     if ((rand() % 100) > 90) {
       flipRandomBit();
@@ -143,7 +161,7 @@ int main() {
 
     struct timespec tim, tim2;
     tim.tv_sec = 0;
-    tim.tv_nsec = 100000000L;
+    tim.tv_nsec = 75000000L;
     nanosleep(&tim, &tim2);
   }
 
