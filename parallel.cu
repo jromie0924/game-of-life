@@ -9,27 +9,36 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "utils.h"
+
 #define BLOCK_WIDTH 32
 #define GRID_SIZE 50
 
 bool continueNextGeneration = true;
 
-#define gpuErrchk(ans) { gpuAssert((ans), #ans, __FILE__, __LINE__); }
-inline void gpuAssert(cudaError_t code, const char* const func, char *file, int line, bool abort=true) {
-    if (code != cudaSuccess) {
-        std::cerr << "CUDA error at: " << file << ":" << line << std::endl;
-      std::cerr << cudaGetErrorString(code) << " " << func << std::endl;
-        if (abort) {
-          exit(code);
-        }
-    }
+/**
+ * @brief Determine whether coordinates are within the bounds of shared memory.
+ * 
+ * @param x x coordinate
+ * @param y y coordinate
+ * @return boolean
+ */
+__device__ bool useShared(int x, int y) {
+  if (x < 0 || y < 0 || x >= blockDim.x || y >= blockDim.y) {
+    return false;
+  }
+  return true;
 }
 
-__device__ int getIdx(int x, int y) {
+__device__ int getIdx_global(int x, int y) {
   if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) {
     return -1;
   }
   return y * GRID_SIZE + x;
+}
+
+__device__ int getIdx_shared(int x, int y) {
+  return y * blockDim.x + x;
 }
 
 __device__ bool assessNeighborCount(int counter, bool currentVal) {
@@ -63,54 +72,115 @@ __global__ void computeNextGeneration(const bool* const inputGrid, bool* const o
     return;
   }
 
-  // __shared__ bool* s_input_grid
+  // Obtain mapped shared memory location
+  int2 s_pos2d = make_int2(threadIdx.x, threadIdx.y);
+  int s_idx = s_pos2d.y * blockDim.x + s_pos2d.x;
+
+  __shared__ bool s_inputGrid[BLOCK_WIDTH * BLOCK_WIDTH];
+  s_inputGrid[s_idx] = inputGrid[idx];
+  __syncthreads();
 
   int counter = 0;
   int cellValue;
 
-
-  int topLeftIdx = getIdx(pos2d.x - 1, pos2d.y - 1);
-  if (topLeftIdx >= 0) {
-    counter += inputGrid[topLeftIdx] ? 1 : 0;
+  // Top left
+  int topLeftIdx;
+  if (useShared(s_pos2d.x - 1, s_pos2d.y - 1)) {
+    topLeftIdx = getIdx_shared(s_pos2d.x - 1, s_pos2d.y - 1);
+    counter += s_inputGrid[topLeftIdx] ? 1 : 0;
+  } else {
+    topLeftIdx = getIdx_global(pos2d.x - 1, pos2d.y - 1);
+    if (topLeftIdx >= 0) {
+      counter += inputGrid[topLeftIdx] ? 1 : 0;
+    }
   }
 
-  int topIdx = getIdx(pos2d.x, pos2d.y - 1);
-  if (topIdx >= 0) {
-    counter += inputGrid[topIdx] ? 1 : 0;
+  // Top
+  int topIdx;
+  if (useShared(s_pos2d.x, s_pos2d.y - 1)) {
+    topIdx = getIdx_shared(s_pos2d.x, s_pos2d.y - 1);
+    counter += s_inputGrid[topIdx] ? 1 : 0;
+  } else {
+    topIdx = getIdx_global(pos2d.x, pos2d.y - 1);
+    if (topIdx >= 0) {
+      counter += inputGrid[topIdx] ? 1 : 0;
+    }
   }
 
-  int topRightIdx = getIdx(pos2d.x + 1, pos2d.y - 1);
-  if (topRightIdx >= 0) {
-    counter += inputGrid[topRightIdx] ? 1 : 0;
+  // Top right
+  int topRightIdx;
+  if (useShared(s_pos2d.x + 1, s_pos2d.y - 1)) {
+    topRightIdx = getIdx_shared(s_pos2d.x + 1, s_pos2d.y - 1);
+    counter += s_inputGrid[topRightIdx] ? 1 : 0;
+  } else {
+    topRightIdx = getIdx_global(pos2d.x + 1, pos2d.y - 1);
+    if (topRightIdx >= 0) {
+      counter += inputGrid[topRightIdx] ? 1 : 0;
+    }
   }
 
-  int leftIdx = getIdx(pos2d.x - 1, pos2d.y);
-  if (leftIdx >= 0) {
-    counter += inputGrid[leftIdx] ? 1 : 0;
+  // Left
+  int leftIdx;
+  if (useShared(s_pos2d.x - 1, s_pos2d.y)) {
+    leftIdx = getIdx_shared(s_pos2d.x - 1, s_pos2d.y);
+    counter += s_inputGrid[leftIdx] ? 1 : 0;
+  } else {
+    leftIdx = getIdx_global(pos2d.x - 1, pos2d.y);
+    if (leftIdx >= 0) {
+      counter += inputGrid[leftIdx] ? 1 : 0;
+    }
   }
 
-  int rightIdx = getIdx(pos2d.x + 1, pos2d.y);
-  if (rightIdx >= 0) {
-    counter += inputGrid[rightIdx] ? 1 : 0;
+  // Right
+  int rightIdx;
+  if (useShared(s_pos2d.x + 1, s_pos2d.y)) {
+    rightIdx = getIdx_shared(s_pos2d.x + 1, s_pos2d.y);
+    counter += s_inputGrid[rightIdx] ? 1 : 0;
+  } else {
+    rightIdx = getIdx_global(pos2d.x + 1, pos2d.y);
+    if (rightIdx >= 0) {
+      counter += inputGrid[rightIdx] ? 1 : 0;
+    }
   }
 
-  int bottomLeftIdx = getIdx(pos2d.x - 1, pos2d.y + 1);
-  if (bottomLeftIdx >= 0) {
-    counter += inputGrid[bottomLeftIdx] ? 1 : 0;
+  // Bottom left
+  int bottomLeftIdx;
+  if (useShared(s_pos2d.x - 1, s_pos2d.y + 1)) {
+    bottomLeftIdx = getIdx_shared(s_pos2d.x - 1, s_pos2d.y + 1);
+    counter += s_inputGrid[bottomLeftIdx] ? 1 : 0;
+  } else {
+    bottomLeftIdx = getIdx_global(pos2d.x - 1, pos2d.y + 1);
+    if (bottomLeftIdx >= 0) {
+      counter += inputGrid[bottomLeftIdx] ? 1 : 0;
+    }
+  }
+  
+  // Bottom
+  int bottomIdx;
+  if (useShared(s_pos2d.x, s_pos2d.y + 1)) {
+    bottomIdx = getIdx_shared(s_pos2d.x, s_pos2d.y + 1);
+    counter += s_inputGrid[bottomIdx] ? 1 : 0;
+  } else {
+    bottomIdx = getIdx_global(pos2d.x, pos2d.y + 1);
+    if (bottomIdx >= 0) {
+      counter += inputGrid[bottomIdx] ? 1 : 0;
+    }
   }
 
-  int bottomIdx = getIdx(pos2d.x, pos2d.y + 1);
-  if (bottomIdx >= 0) {
-    counter += inputGrid[bottomIdx] ? 1 : 0;
-  }
-
-  int bottomRightIdx = getIdx(pos2d.x + 1, pos2d.y + 1);
-  if (bottomRightIdx >= 0) {
-    counter += inputGrid[bottomRightIdx] ? 1 : 0;
+  // Bottom right
+  int bottomRightIdx;
+  if (useShared(s_pos2d.x + 1, s_pos2d.y + 1)) {
+    bottomRightIdx = getIdx_shared(s_pos2d.x + 1, s_pos2d.y + 1);
+    counter += s_inputGrid[bottomRightIdx] ? 1 : 0;
+  } else {
+    bottomRightIdx = getIdx_global(pos2d.x + 1, pos2d.y + 1);
+    if (bottomRightIdx >= 0) {
+      counter += inputGrid[bottomRightIdx] ? 1 : 0;
+    }
   }
 
   // Assess counter value
-  outputGrid[idx] = assessNeighborCount(counter, inputGrid[idx]);
+  outputGrid[idx] = assessNeighborCount(counter, s_inputGrid[s_idx]);
 }
 
 __global__ void placeCells(bool* const grid, curandState* state) {
