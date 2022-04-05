@@ -6,4 +6,4 @@ I find this simulation to be fascinating; when I first heard about it, I immedia
 A serial implementation that runs on a single thread in the CPU. I implemented this first to just get the game working.
 
 ### Parallel
-After getting the serial version working, I started working on threading it out on the graphics card. It works! Though as of now (4/4/22) it probably could be cleaned up, and I need to modify it to utilize shared memory when possible for better performance.
+Same functionality on a graphics card and better performance
