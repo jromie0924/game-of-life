@@ -7,9 +7,12 @@
 #include <curand_kernel.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define BLOCK_WIDTH 32
 #define GRID_SIZE 50
+
+bool continueNextGeneration = true;
 
 #define gpuErrchk(ans) { gpuAssert((ans), #ans, __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char* const func, char *file, int line, bool abort=true) {
@@ -138,10 +141,20 @@ void printGrid(bool* grid) {
   for (int i = 0; i < GRID_SIZE; ++i) {
     for (int j = 0; j < GRID_SIZE; ++j) {
       int idx = i * GRID_SIZE + j;
-      std::cout << grid[idx] << " ";
+      char*  val;
+      if (grid[idx]) {
+        val = "#";
+      } else {
+        val = "-";
+      }
+      std::cout << val << " ";
     }
     std::cout << "\n";
   }
+}
+
+void handleSignal(int sigNum) {
+  continueNextGeneration = false;
 }
 
 int main(int argc, char** argv) {
@@ -151,8 +164,6 @@ int main(int argc, char** argv) {
   gpuErrchk(cudaFree(0));
 
   size_t allocSize = sizeof(bool) * GRID_SIZE * GRID_SIZE;
-  bool* h_grid = (bool*)malloc(allocSize);
-  memset(h_grid, 0, allocSize);
   bool* d_gridInput;
   bool* d_gridOutput;
   gpuErrchk(cudaMalloc(&d_gridInput, allocSize));
@@ -175,8 +186,11 @@ int main(int argc, char** argv) {
   bool* initialGrid = (bool*)malloc(allocSize);
   gpuErrchk(cudaMemcpy(initialGrid, d_gridInput, allocSize, cudaMemcpyDeviceToHost));
   printGrid(initialGrid);
+  free(initialGrid);
 
-  while (true) {
+  signal(SIGINT, handleSignal);
+
+  while (continueNextGeneration) {
     bool* output = (bool*)malloc(allocSize);
     computeNextGeneration<<<gridSize, blockSize>>>(d_gridInput, d_gridOutput);
     cudaDeviceSynchronize();
@@ -196,8 +210,9 @@ int main(int argc, char** argv) {
     nanosleep(&tim, &tim2);
   }
 
-  free(h_grid);
   gpuErrchk(cudaFree(state));
   gpuErrchk(cudaFree(d_gridInput));
   gpuErrchk(cudaFree(d_gridOutput));
+
+  printf("\nExiting.\n");
 }
