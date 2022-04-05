@@ -12,7 +12,7 @@
 #include "utils.h"
 
 #define BLOCK_WIDTH 32
-#define GRID_SIZE 50
+#define GRID_SIZE 64
 
 bool continueNextGeneration = true;
 
@@ -81,7 +81,6 @@ __global__ void computeNextGeneration(const bool* const inputGrid, bool* const o
   __syncthreads();
 
   int counter = 0;
-  int cellValue;
 
   // Top left
   int topLeftIdx;
@@ -183,27 +182,21 @@ __global__ void computeNextGeneration(const bool* const inputGrid, bool* const o
   outputGrid[idx] = assessNeighborCount(counter, s_inputGrid[s_idx]);
 }
 
-__global__ void placeCells(bool* const grid, curandState* state) {
-  const int2 twoDimCoords = make_int2(blockIdx.x * blockDim.x + threadIdx.x,
-                                      blockIdx.y * blockDim.y + threadIdx.y);
-  const int idx = twoDimCoords.y * GRID_SIZE + twoDimCoords.x;
+void initBoard(bool* grid) {
+  // Allocate memory and initialize to all 0's.
+  memset(grid, 0, sizeof(bool) * GRID_SIZE * GRID_SIZE);
 
-  if (twoDimCoords.x >= GRID_SIZE || twoDimCoords.y >= GRID_SIZE) {
-    return;
+  // Random seed
+  srand(time(NULL));
+
+  for (int i = 0; i < GRID_SIZE; ++i) {
+    for (int j = 0; j < GRID_SIZE; ++j) {
+      // Get 1D mapping
+      int idx = i * GRID_SIZE + j;
+      bool value = (rand() % 100) > 75;
+      grid[idx] = value;
+    }
   }
-  int randomVal = (int)(curand_uniform(&state[idx]) * 100.0f);
-  if (randomVal > 75) {
-    grid[idx] = 1;
-  } else {
-    grid[idx] = 0;
-  }
-}
-
-__global__ void initCurand(curandState* state, unsigned long seed) {
-  int2 pos2d = make_int2(threadIdx.x + blockDim.x * blockIdx.x, threadIdx.y + blockDim.y * blockIdx.y);
-  int idx = pos2d.y * GRID_SIZE + pos2d.x;
-
-  curand_init(seed, idx, 0, &state[idx]);
 }
 
 void printGrid(bool* grid) {
@@ -229,7 +222,6 @@ void handleSignal(int sigNum) {
 
 int main(int argc, char** argv) {
   const dim3 blockSize(BLOCK_WIDTH, BLOCK_WIDTH);
-  // const dim3 gridSize(1,1,1);
   const dim3 gridSize(ceil(1.0f*GRID_SIZE / blockSize.x), ceil(1.0f*GRID_SIZE / blockSize.y));
   gpuErrchk(cudaFree(0));
 
@@ -239,22 +231,10 @@ int main(int argc, char** argv) {
   gpuErrchk(cudaMalloc(&d_gridInput, allocSize));
   gpuErrchk(cudaMalloc(&d_gridOutput, allocSize));
 
-  unsigned long seed = time(NULL);
-
-  curandState* state;
-  gpuErrchk(cudaMalloc((void **)&state, sizeof(curandState) * GRID_SIZE * GRID_SIZE));
-
-  initCurand<<<gridSize, blockSize>>>(state, seed);
-
-  cudaDeviceSynchronize();
-  gpuErrchk(cudaGetLastError());
-
-  placeCells<<<gridSize, blockSize>>>(d_gridInput, state);
-  cudaDeviceSynchronize();
-  gpuErrchk(cudaGetLastError());
-
   bool* initialGrid = (bool*)malloc(allocSize);
-  gpuErrchk(cudaMemcpy(initialGrid, d_gridInput, allocSize, cudaMemcpyDeviceToHost));
+  initBoard(initialGrid);
+  gpuErrchk(cudaMemcpy(d_gridInput, initialGrid, allocSize, cudaMemcpyHostToDevice));
+  
   printGrid(initialGrid);
   free(initialGrid);
 
@@ -284,14 +264,12 @@ int main(int argc, char** argv) {
     gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
 
     free(output);
-    // sleep(1);
     struct timespec tim, tim2;
     tim.tv_sec = 0;
     tim.tv_nsec = 100000000L;
     nanosleep(&tim, &tim2);
   }
 
-  gpuErrchk(cudaFree(state));
   gpuErrchk(cudaFree(d_gridInput));
   gpuErrchk(cudaFree(d_gridOutput));
 
