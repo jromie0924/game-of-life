@@ -8,7 +8,7 @@
 
 #define GRID_SIZE 50
 
-bool cont = true;
+bool continueNextGeneration = true;
 
 bool* grid;
 
@@ -122,7 +122,7 @@ void flipRandomBit() {
 }
 
 void handleSignal(int sigNum) {
-  cont = false;
+  continueNextGeneration = false;
 }
 
 int main() {
@@ -131,7 +131,7 @@ int main() {
   printBoard();
 
   signal(SIGINT, handleSignal);
-  while (cont) {
+  while (continueNextGeneration) {
     nextGeneration();
     printBoard();
     
