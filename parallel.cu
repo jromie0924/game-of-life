@@ -261,13 +261,24 @@ int main(int argc, char** argv) {
   signal(SIGINT, handleSignal);
 
   while (continueNextGeneration) {
-    bool* output = (bool*)malloc(allocSize);
-    computeNextGeneration<<<gridSize, blockSize>>>(d_gridInput, d_gridOutput);
-    cudaDeviceSynchronize();
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
 
+    cudaEventRecord(start);
+    computeNextGeneration<<<gridSize, blockSize>>>(d_gridInput, d_gridOutput);
+    cudaEventRecord(stop);
+    cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
+
+    bool* output = (bool*)malloc(allocSize);
     gpuErrchk(cudaMemcpy(output, d_gridOutput, allocSize, cudaMemcpyDeviceToHost));
     printGrid(output);
+
+    cudaEventSynchronize(stop);
+    float milliseconds = 0.0f;
+    gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
+    printf("Process time: %f milliseconds.\n", milliseconds);
 
     gpuErrchk(cudaMemcpy(d_gridInput, d_gridOutput, allocSize, cudaMemcpyDeviceToDevice));
     gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
