@@ -5,5 +5,9 @@ I find this simulation to be fascinating; when I first heard about it, I immedia
 ### Serial
 A serial implementation that runs on a single thread in the CPU. I implemented this first to just get the game working.
 
+To compile: `g++ serial.cpp`. To run: `./.a.out`
+
 ### Parallel
-Same functionality on a graphics card and better performance
+Same functionality on a graphics card and better performance.
+
+To compile: `nvcc parallel.cu`. To run: `./.a.out`
