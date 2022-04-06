@@ -1,5 +1,5 @@
 # John Conway's Game of Life
-I find this simulation to be fascinating; when I first heard about it, I immediately wanted to go implement it in CUDA, so here it is. More info here: https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life
+I find this simulation to be fascinating; when I first heard about it, I immediately wanted to go implement it in CUDA, so here it is. More info here: https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life - also heavily referenced in this video: https://www.youtube.com/watch?v=HeQX2HjkcNo&t=221s
 
 The configurations in serial and parallel run nicely both single-threaded on a CPU and in parallel on a GPU. It outputs frame processing time at the bottom screen; you'll see how much better the graphics card performs.
 
