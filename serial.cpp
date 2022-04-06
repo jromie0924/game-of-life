@@ -158,8 +158,6 @@ int main() {
       flipRandomBit();
     }
 
-    // sleep(1);
-
     struct timespec tim, tim2;
     tim.tv_sec = 0;
     tim.tv_nsec = 75000000L;
