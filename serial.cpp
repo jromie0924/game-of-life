@@ -121,7 +121,8 @@ void nextGeneration() {
       newGrid[idx] = assessNeighborCount(counter, current);
     }
   }
-  grid = newGrid;
+  memcpy(grid, newGrid, sizeof(bool) * GRID_SIZE * GRID_SIZE);
+  free(newGrid);
 }
 
 void flipRandomBit() {
