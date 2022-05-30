@@ -12,6 +12,6 @@ A serial implementation that runs on a single thread in the CPU. I implemented t
 To compile: `g++ serial.cpp`. To run: `./.a.out`
 
 ### Parallel
-Same functionality on a (NVIDIA) graphics card and better performance. Depending on your card's specs, you might need to adjust block size to meet the amount of threads per block it supports. This was developed using a GTX 1060 with 6GB of memory. It performs (with printing commented out) well up to a block width of 45000 before running out of memory. For actual visual representation, 50-72 block width is sufficient.
+Same functionality on a (NVIDIA) graphics card and better performance. Depending on your card's specs, you might need to adjust block size to meet the amount of threads per block it supports. This was developed using a GTX 1060 with 6GB of memory. It performs (with printing commented out) well up to a (square) grid width of 45000 before running out of memory. For actual visual representation, 50-72 block width is sufficient.
 
 To compile: `nvcc parallel.cu`. To run: `./.a.out`
