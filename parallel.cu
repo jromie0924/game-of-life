@@ -135,7 +135,7 @@ void printGrid(bool* grid) {
   for (int i = 0; i < GRID_SIZE; ++i) {
     for (int j = 0; j < GRID_SIZE; ++j) {
       int idx = i * GRID_SIZE + j;
-      char*  val;
+      char* val;
       if (grid[idx]) {
         val = "#";
       } else {
