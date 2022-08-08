@@ -8,11 +8,12 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <inttypes.h>
 
 #include "utils.h"
 
 #define BLOCK_WIDTH 32
-#define GRID_SIZE 45000
+#define GRID_SIZE 72
 
 bool continueNextGeneration = true;
 
@@ -165,10 +166,14 @@ int main(int argc, char** argv) {
   initBoard(initialGrid);
   gpuErrchk(cudaMemcpy(d_gridInput, initialGrid, allocSize, cudaMemcpyHostToDevice));
   
-  // printGrid(initialGrid);
+  printGrid(initialGrid);
   free(initialGrid);
+  initialGrid = NULL;
 
   signal(SIGINT, handleSignal);
+
+  uint64_t generationCounter = 0;
+  static bool* output = (bool*)malloc(allocSize);
 
   while (continueNextGeneration) {
     cudaEvent_t start, stop;
@@ -181,20 +186,27 @@ int main(int argc, char** argv) {
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
 
-    bool* output = (bool*)malloc(allocSize);
+    memset(output, 0, allocSize);
     gpuErrchk(cudaMemcpy(output, d_gridOutput, allocSize, cudaMemcpyDeviceToHost));
-    // printGrid(output);
+    printGrid(output);
+
+    if ((rand() % 100) > 90) {
+      int idx = rand() % (GRID_SIZE * GRID_SIZE) - 1;
+      output[idx] = true;
+      gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
+      gpuErrchk(cudaMemcpy(d_gridOutput, output, allocSize, cudaMemcpyHostToDevice));
+    }
 
     cudaEventSynchronize(stop);
     float milliseconds = 0.0f;
     gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
+    printf("Generation %" PRIu64 " ", ++generationCounter);
+    
     printf("Process time: %f milliseconds.\n", milliseconds);
 
     gpuErrchk(cudaMemcpy(d_gridInput, d_gridOutput, allocSize, cudaMemcpyDeviceToDevice));
     gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
 
-    free(output);
-    // sleep(2);
     struct timespec tim, tim2;
     tim.tv_sec = 0;
     tim.tv_nsec = 75000000L;
