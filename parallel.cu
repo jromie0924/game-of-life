@@ -173,6 +173,9 @@ int main(int argc, char** argv) {
   signal(SIGINT, handleSignal);
 
   uint64_t generationCounter = 0;
+
+  // Static ensures that this memory allocation persists the same
+  // memory address throughout the runtime of the program.
   static bool* output = (bool*)malloc(allocSize);
 
   while (continueNextGeneration) {
@@ -186,10 +189,13 @@ int main(int argc, char** argv) {
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
 
+    // Zero out the output matrix to cleanse it
     memset(output, 0, allocSize);
     gpuErrchk(cudaMemcpy(output, d_gridOutput, allocSize, cudaMemcpyDeviceToHost));
     printGrid(output);
 
+    // Decide whether to randomly place a (1) on the grid
+    // Helps to make the simulation intinite.
     if ((rand() % 100) > 90) {
       int idx = rand() % (GRID_SIZE * GRID_SIZE) - 1;
       output[idx] = true;

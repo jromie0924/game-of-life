@@ -125,6 +125,10 @@ void nextGeneration() {
   free(newGrid);
 }
 
+/**
+ * @brief 
+ * Randomly places a (1) on the grid to make the simulation infinite
+ */
 void flipRandomBit() {
   int idx = rand() % (GRID_SIZE * GRID_SIZE) - 1;
   grid[idx] = true;
