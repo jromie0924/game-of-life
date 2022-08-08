@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
     cudaDeviceSynchronize();
     gpuErrchk(cudaGetLastError());
 
-    // Zero out the output matrix to cleanse it
+    // Zero out the output matrix
     memset(output, 0, allocSize);
     gpuErrchk(cudaMemcpy(output, d_gridOutput, allocSize, cudaMemcpyDeviceToHost));
     printGrid(output);
