@@ -228,7 +228,7 @@ int main(int argc, char** argv) {
 
     // Decide whether to randomly place a (1) on the grid
     // Helps to make the simulation infinite.
-    if ((rand() % 100) > 90) {
+    if ((rand() % 100) >= 90) {
       int idx = rand() % (GRID_SIZE * GRID_SIZE) - 1;
       output[idx] = true;
       gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
