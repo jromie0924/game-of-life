@@ -10,11 +10,13 @@
 #include <signal.h>
 #include <inttypes.h>
 #include <ctime>
+#include <stdlib.h>
+#include <chrono>
 
 #include "utils.h"
 
 #define BLOCK_WIDTH 32
-#define GRID_SIZE 72
+#define GRID_SIZE 70
 
 bool continueNextGeneration = true;
 
@@ -132,6 +134,7 @@ void initBoard(bool* grid) {
 }
 
 void printGrid(bool* grid) {
+  system("clear");
   for (int i = 0; i <= GRID_SIZE; ++i) {
     printf("--");
   }
@@ -167,12 +170,12 @@ void printFormattedTime(time_t seconds) {
     time_t hours = minutes / 60;
     if (hours >= 1) {
       int minuteRemainder = minutes % 60;
-      printf("%ld hours, %d minutes, %d seconds", hours, minuteRemainder, secondRemainder);
+      printf("%ld hour(s), %d minute(s), %d second(s)", hours, minuteRemainder, secondRemainder);
     } else {
-      printf("%ld minutes, %d seconds", minutes, secondRemainder);
+      printf("%ld minute(s), %d second(s)", minutes, secondRemainder);
     }
   } else {
-    printf("%ld seconds", seconds);
+    printf("%ld second(s)", seconds);
   }
 }
 
@@ -243,7 +246,7 @@ int main(int argc, char** argv) {
     printf("Process time: %f milliseconds.", milliseconds);
     printf(" | Runtime: ");
     printFormattedTime(runtime);
-    printf("\n");
+    printf(" | Start time: %s", ctime(&pgmStart));
 
 
     gpuErrchk(cudaMemcpy(d_gridInput, d_gridOutput, allocSize, cudaMemcpyDeviceToDevice));
@@ -254,8 +257,6 @@ int main(int argc, char** argv) {
     tim.tv_nsec = 75000000L;
     nanosleep(&tim, &tim2);
   }
-
-  free(output);
 
   gpuErrchk(cudaFree(d_gridInput));
   gpuErrchk(cudaFree(d_gridOutput));
