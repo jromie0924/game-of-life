@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <inttypes.h>
+#include <ctime>
 
 #include "utils.h"
 
@@ -159,6 +160,22 @@ void handleSignal(int sigNum) {
   continueNextGeneration = false;
 }
 
+void printFormattedTime(time_t seconds) {
+  time_t minutes = seconds / 60;
+  if (minutes >= 1) {
+    int secondRemainder = seconds % 60;
+    time_t hours = minutes / 60;
+    if (hours >= 1) {
+      int minuteRemainder = minutes % 60;
+      printf("%ld hours, %d minutes, %d seconds", hours, minuteRemainder, secondRemainder);
+    } else {
+      printf("%ld minutes, %d seconds", minutes, secondRemainder);
+    }
+  } else {
+    printf("%ld seconds", seconds);
+  }
+}
+
 int main(int argc, char** argv) {
   const dim3 blockSize(BLOCK_WIDTH, BLOCK_WIDTH);
   const dim3 gridSize(ceil(1.0f*GRID_SIZE / blockSize.x), ceil(1.0f*GRID_SIZE / blockSize.y));
@@ -185,6 +202,10 @@ int main(int argc, char** argv) {
   // Static ensures that this memory allocation persists the same
   // memory address throughout the runtime of the program.
   static bool* output = (bool*)malloc(allocSize);
+
+  time_t pgmStart;
+  time_t now;
+  time(&pgmStart);
 
   while (continueNextGeneration) {
     cudaEvent_t start, stop;
@@ -214,9 +235,16 @@ int main(int argc, char** argv) {
     cudaEventSynchronize(stop);
     float milliseconds = 0.0f;
     gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
+
+    time(&now);
+    time_t runtime = now - pgmStart;
+
     printf("Iteration %" PRIu64 " | ", ++generationCounter);
-    
-    printf("Process time: %f milliseconds.\n", milliseconds);
+    printf("Process time: %f milliseconds.", milliseconds);
+    printf(" | Runtime: ");
+    printFormattedTime(runtime);
+    printf("\n");
+
 
     gpuErrchk(cudaMemcpy(d_gridInput, d_gridOutput, allocSize, cudaMemcpyDeviceToDevice));
     gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
