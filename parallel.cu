@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
     cudaEventSynchronize(stop);
     float milliseconds = 0.0f;
     gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
-    printf("Generation %" PRIu64 " ", ++generationCounter);
+    printf("Iteration %" PRIu64 " | ", ++generationCounter);
     
     printf("Process time: %f milliseconds.\n", milliseconds);
 
