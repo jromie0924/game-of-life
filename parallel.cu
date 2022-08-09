@@ -227,6 +227,8 @@ int main(int argc, char** argv) {
     nanosleep(&tim, &tim2);
   }
 
+  free(output);
+
   gpuErrchk(cudaFree(d_gridInput));
   gpuErrchk(cudaFree(d_gridOutput));
 
