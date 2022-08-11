@@ -170,7 +170,13 @@ void printFormattedTime(time_t seconds) {
     time_t hours = minutes / 60;
     if (hours >= 1) {
       int minuteRemainder = minutes % 60;
-      printf("%ld hour(s), %d minute(s), %d second(s)", hours, minuteRemainder, secondRemainder);
+      time_t days = hours / 24;
+      if (days >= 1) {
+        int hourRemainder = hours % 24;
+        printf("%ld day(s), %d hour(s), %d minute(s), %d second(s)", days, hourRemainder, minuteRemainder, secondRemainder);
+      } else {
+        printf("%ld hour(s), %d minute(s), %d second(s)", hours, minuteRemainder, secondRemainder);
+      }
     } else {
       printf("%ld minute(s), %d second(s)", minutes, secondRemainder);
     }
