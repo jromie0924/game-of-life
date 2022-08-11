@@ -185,6 +185,23 @@ void printFormattedTime(time_t seconds) {
   }
 }
 
+/**
+ * @brief Check that the array contains true values.
+ * 
+ * @param array 
+ * @return true 
+ * @return false 
+ */
+bool containsTrueValues(bool* array) {
+  bool comparator = false;
+  for (int i = 0; i < GRID_SIZE * GRID_SIZE; ++i) {
+    if (comparator || array[i]) {
+      return true;
+    }
+  }
+  return comparator;
+}
+
 int main(int argc, char** argv) {
   const dim3 blockSize(BLOCK_WIDTH, BLOCK_WIDTH);
   const dim3 gridSize(ceil(1.0f*GRID_SIZE / blockSize.x), ceil(1.0f*GRID_SIZE / blockSize.y));
@@ -254,6 +271,11 @@ int main(int argc, char** argv) {
     printFormattedTime(runtime);
     printf(" | Start time: %s", ctime(&pgmStart));
 
+    // It is possible that the grid will be completely eliminated, in which case the program will terminate.
+    if (!containsTrueValues(output)) {
+      printf("Grid has no more living members. Terminating.");
+      continueNextGeneration = false;
+    }
 
     gpuErrchk(cudaMemcpy(d_gridInput, d_gridOutput, allocSize, cudaMemcpyDeviceToDevice));
     gpuErrchk(cudaMemset(d_gridOutput, 0, allocSize));
