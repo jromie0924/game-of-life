@@ -15,20 +15,29 @@ bool continueNextGeneration = true;
 bool* grid;
 
 void printBoard() {
-  std::cout << "----------------" << std::endl;
+  system("clear");
+  for (int i = 0; i <= GRID_SIZE; ++i) {
+    printf("--");
+  }
+  std::cout << "\n";
   for (int i = 0; i < GRID_SIZE; ++i) {
+    std::cout << "|";
     for (int j = 0; j < GRID_SIZE; ++j) {
       int idx = i * GRID_SIZE + j;
-      std::string val;
+      char* val;
       if (grid[idx]) {
         val = "#";
       } else {
-        val = "-";
+        val = " ";
       }
       std::cout << val << " ";
     }
-    std::cout << "\n";
+    std::cout << "|\n";
   }
+  for (int i = 0; i <= GRID_SIZE; ++i) {
+    printf("--");
+  }
+  std::cout << "\n";
 }
 
 void initBoard() {
