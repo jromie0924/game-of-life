@@ -17,6 +17,13 @@
 
 #define BLOCK_WIDTH 32
 #define GRID_SIZE 70
+#define STARTING_THRESHOLD 75 // Probability that a cell is dead to start off
+
+/*
+ * Use this GRID_SIZE value for testing GPU performance.
+ * 
+*/
+// #define GRID_SIZE 40000
 
 bool continueNextGeneration = true;
 
@@ -127,7 +134,7 @@ void initBoard(bool* grid) {
     for (int j = 0; j < GRID_SIZE; ++j) {
       // Get 1D mapping
       int idx = i * GRID_SIZE + j;
-      bool value = (rand() % 100) > 75;
+      bool value = (rand() % 100) > STARTING_THRESHOLD;
       grid[idx] = value;
     }
   }
@@ -193,13 +200,12 @@ void printFormattedTime(time_t seconds) {
  * @return false 
  */
 bool containsTrueValues(bool* array) {
-  bool comparator = false;
   for (int i = 0; i < GRID_SIZE * GRID_SIZE; ++i) {
-    if (comparator || array[i]) {
+    if (array[i] || false) {
       return true;
     }
   }
-  return comparator;
+  return false;
 }
 
 int main(int argc, char** argv) {
@@ -250,7 +256,7 @@ int main(int argc, char** argv) {
     printGrid(output);
 
     // Decide whether to randomly place a (1) on the grid
-    // Helps to make the simulation infinite.
+    // Guarantees that the simulation will go until the board is empty.
     if ((rand() % 100) >= 90) {
       int idx = rand() % (GRID_SIZE * GRID_SIZE) - 1;
       output[idx] = true;
