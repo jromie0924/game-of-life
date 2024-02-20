@@ -201,7 +201,7 @@ void printFormattedTime(time_t seconds) {
  */
 bool containsTrueValues(bool* array) {
   for (int i = 0; i < GRID_SIZE * GRID_SIZE; ++i) {
-    if (array[i] || false) {
+    if (array[i]) {
       return true;
     }
   }
